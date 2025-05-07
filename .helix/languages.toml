@@ -1,0 +1,72 @@
+[language-server]
+ocamllsp = { command = "ocamllsp" }
+
+[[language]]
+name = "nix"
+scope = "source.nix"
+injection-regex = "nix"
+file-types = [ "nix" ]
+indent = { tab-width = 2, unit = "  " }
+shebangs = [ ]
+formatter = { command = "nix" , args = [ "fmt" ] }
+language-servers = [ ]
+auto-format = true
+
+[language.auto-pairs]
+'(' = ')'
+'{' = '}'
+'[' = ']'
+'"' = '"'
+
+[[language]]
+name = "ocaml"
+scope = "source.ocaml"
+injection-regex = "ocaml"
+file-types = [ "ml" ]
+block-comment-tokens = { start = "(*", end = "*)" }
+indent = { tab-width = 2, unit = "  " }
+shebangs = [ "ocaml", "ocamlrun", "ocamlscript" ]
+formatter = { command = "ocamlformat", args = [ "--enable-outside-detected-project", "--impl", "-" ] }
+language-servers = [ "ocamllsp" ]
+auto-format = true
+
+[language.auto-pairs]
+'(' = ')'
+'{' = '}'
+'[' = ']'
+'"' = '"'
+
+[[language]]
+name = "ocaml-interface"
+scope = "source.ocaml.interface"
+file-types = [ "mli" ]
+comment-token = "(**)"
+indent = { tab-width = 2, unit = "  " }
+shebangs = [ ]
+block-comment-tokens = { start = "(*", end = "*)" }
+formatter = { command = "ocamlformat", args = [ "--enable-outside-detected-project", "--intf", "-" ] }
+language-servers = [ "ocamllsp" ]
+auto-format = true
+
+[language.auto-pairs]
+'(' = ')'
+'{' = '}'
+'[' = ']'
+'"' = '"'
+
+[[language]]
+name = "dune"
+scope = "source.dune"
+roots = [ "dune-project" ]
+file-types = [ { glob = "dune-project" }, { glob = "dune" } ]
+comment-token = ";"
+indent = { tab-width = 1, unit = " " }
+grammar = "scheme"
+formatter = { command = "dune", args = [ "format-dune-file" ] }
+auto-format = true
+
+[language.auto-pairs]
+'(' = ')'
+'{' = '}'
+'[' = ']'
+'"' = '"'
