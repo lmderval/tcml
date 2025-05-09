@@ -12,8 +12,15 @@ rule token = parse
 | ['0'-'9']+ as lxm { Tokens.NUM (int_of_string lxm, location lexbuf) }
 | ( ['0'-'9']+ '.' ['0'-'9']* ) | ( ['0'-'9']* '.' ['0'-'9']+ ) as lxm { Tokens.REAL (float_of_string lxm, location lexbuf) }
 | [' ' '\t'] { token lexbuf }
-| ( "--" ['a'-'z']* )? '\n' { Lexing.new_line lexbuf; token lexbuf }
+| '\n' { Lexing.new_line lexbuf; token lexbuf }
+| "(*" { comment lexbuf }
 | eof { Tokens.EOF (location lexbuf) }
 | _ { error lexbuf }
+
+and comment = parse
+| '\n' { Lexing.new_line lexbuf; comment lexbuf }
+| "*)" { token lexbuf }
+| eof { error lexbuf }
+| _ { comment lexbuf }
 
 {}
