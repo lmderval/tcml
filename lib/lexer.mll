@@ -108,7 +108,9 @@ rule token = parse
 | ws+ { token lexbuf }
 | nl { Lexing.new_line lexbuf;
        token lexbuf }
-| "/*" { comment 1 lexbuf }
+| "/*" { let buffer = Buffer.create 16 in
+         Buffer.add_string buffer "/*";
+         comment 0 (Lexing.lexeme_start_p lexbuf) buffer lexbuf }
 (* Others *)
 | eof { Tokens.EOF (location lexbuf) }
 | _ { error lexbuf }
@@ -185,13 +187,20 @@ and growing_string raw start_p buffer error_state = parse
       Buffer.add_string buffer (Lexing.lexeme lexbuf);
       growing_string raw start_p buffer error_state lexbuf }
 
-and comment level = parse
+and comment level start_p buffer = parse
 | nl { Lexing.new_line lexbuf;
-       comment level lexbuf }
-| "*/" { if level == 0
+       Buffer.add_string buffer (Lexing.lexeme lexbuf);
+       comment level start_p buffer lexbuf }
+| "/*" { Buffer.add_string buffer "/*";
+         comment (level + 1) start_p buffer lexbuf }
+| "*/" { Buffer.add_string buffer "*/";
+         if level == 0
            then token lexbuf
-           else comment (level - 1) lexbuf }
-| eof { error lexbuf }
-| _ { comment level lexbuf }
+           else comment (level - 1) start_p buffer lexbuf }
+| eof { error_str "Unexpected EOF";
+        let end_p = Lexing.lexeme_end_p lexbuf in
+        Tokens.ERROR (Printf.sprintf "%s" (Buffer.contents buffer), (start_p, end_p)) }
+| _ { Buffer.add_string buffer (Lexing.lexeme lexbuf);
+      comment level start_p buffer lexbuf }
 
 {}
