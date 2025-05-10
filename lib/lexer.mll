@@ -8,7 +8,7 @@ let error lexbuf =
 let error_str msg =
   Printf.eprintf "%s\n" msg
 
-exception Bad_escape of string
+exception Bad_escape
 
 let control ctrl =
   match ctrl with
@@ -45,7 +45,7 @@ let control ctrl =
   | '^' -> '\x1e'
   | '_' -> '\x1f'
   | '?' -> '\x7f'
-  | _ -> raise (Bad_escape (Printf.sprintf "\\^%c" ctrl))
+  | _ -> raise Bad_escape
 }
 
 let id = ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']*
@@ -101,8 +101,9 @@ rule token = parse
 (* Identifiers and Literals *)
 | id { Tokens.ID (Lexing.lexeme lexbuf, location lexbuf) }
 | digit+ { Tokens.INT (int_of_string (Lexing.lexeme lexbuf), location lexbuf) }
-| '"' { growing_string (Lexing.lexeme_start_p lexbuf)
-          (Buffer.create 16) false lexbuf }
+| '"' { let raw = Buffer.create 16 and buffer = Buffer.create 16 in
+        Buffer.add_char raw '"';
+        growing_string raw (Lexing.lexeme_start_p lexbuf) buffer false lexbuf }
 (* Blanks *)
 | ws+ { token lexbuf }
 | nl { Lexing.new_line lexbuf;
@@ -112,52 +113,77 @@ rule token = parse
 | eof { Tokens.EOF (location lexbuf) }
 | _ { error lexbuf }
 
-and format error_state = parse
+and format buffer error_state = parse
 | nl { Lexing.new_line lexbuf;
-       format error_state lexbuf }
-| fmt+ { format error_state lexbuf }
-| '\\' { error_state }
-| _ { format true lexbuf }
+       Buffer.add_string buffer (Lexing.lexeme lexbuf);
+       format buffer error_state lexbuf }
+| fmt+ { Buffer.add_string buffer (Lexing.lexeme lexbuf);
+         format buffer error_state lexbuf }
+| '\\' { Buffer.add_char buffer '\\';
+         error_state }
+| eof { true }
+| _ { Buffer.add_string buffer (Lexing.lexeme lexbuf);
+      format buffer true lexbuf }
 
-and escape = parse
-| 'n' { "\x0a" }
-| 't' { "\x09" }
-| '^' _ { Printf.sprintf "%c" (control (Lexing.lexeme_char lexbuf 1)) }
-| byte { let code = int_of_string (Lexing.lexeme lexbuf) in
+and escape buffer = parse
+| 'n' { Buffer.add_char buffer 'n';
+        "\x0a" }
+| 't' { Buffer.add_char buffer 't';
+        "\x09" }
+| '^' _ { Buffer.add_string buffer (Lexing.lexeme lexbuf);
+          Printf.sprintf "%c" (control (Lexing.lexeme_char lexbuf 1)) }
+| byte { let raw_code = (Lexing.lexeme lexbuf) in
+         let code = int_of_string raw_code in
+         Buffer.add_string buffer raw_code;
          if code <= 255
            then Printf.sprintf "%c" (Char.chr code)
-           else raise (Bad_escape (Printf.sprintf "\\%03d" code)) }
-| '"' { "\x22" }
-| '\\' { "\x5c" }
+           else raise Bad_escape }
+| '"' { Buffer.add_char buffer '"';
+        "\x22" }
+| '\\' { Buffer.add_char buffer '\\';
+         "\x5c" }
 | nl { Lexing.new_line lexbuf;
-       if format false lexbuf
-         then raise (Bad_escape "\\f___f\\");
+       Buffer.add_string buffer (Lexing.lexeme lexbuf);
+       if format buffer false lexbuf
+         then raise Bad_escape;
        "" }
-| fmt+ { if format false lexbuf
-           then raise (Bad_escape "\\f___f\\");
+| fmt+ { Buffer.add_string buffer (Lexing.lexeme lexbuf);
+         if format buffer false lexbuf
+           then raise Bad_escape;
          "" }
-| _ { raise (Bad_escape (Printf.sprintf "\\%s" (Lexing.lexeme lexbuf))) }
+| eof { raise Bad_escape }
+| _ { Buffer.add_string buffer (Lexing.lexeme lexbuf);
+      raise Bad_escape }
 
-and growing_string start_p buffer error_state = parse
-| '"' { let end_p = Lexing.lexeme_end_p lexbuf in
+and growing_string raw start_p buffer error_state = parse
+| '"' { Buffer.add_char raw '"';
+        let end_p = Lexing.lexeme_end_p lexbuf in
         match error_state with
         | false -> Tokens.STRING (Buffer.contents buffer, (start_p, end_p))
         | true -> Tokens.ERROR (Printf.sprintf "%S" (Buffer.contents buffer), (start_p, end_p)) }
 | nl { Lexing.new_line lexbuf;
-         Buffer.add_string buffer (Lexing.lexeme lexbuf);
-         growing_string start_p buffer error_state lexbuf }
-| '\\' { try
-           Buffer.add_string buffer (escape lexbuf);
-           growing_string start_p buffer error_state lexbuf
-         with Bad_escape e ->
+       let lxm = (Lexing.lexeme lexbuf) in
+       Buffer.add_string raw lxm;
+       Buffer.add_string buffer lxm;
+       growing_string raw start_p buffer error_state lexbuf }
+| '\\' { let escape_buffer = Buffer.create 16 in
+         Buffer.add_char escape_buffer '\\';
+         try
+           Buffer.add_string buffer (escape escape_buffer lexbuf);
+           Buffer.add_string raw (Buffer.contents escape_buffer);
+           growing_string raw start_p buffer error_state lexbuf
+         with Bad_escape ->
+           let e = Buffer.contents escape_buffer in
            error_str (Printf.sprintf "Invalid escape: '%s'" e);
            Buffer.add_string buffer e;
-           growing_string start_p buffer true lexbuf }
+           Buffer.add_string raw e;
+           growing_string raw start_p buffer true lexbuf }
 | eof { error_str "Unexpected EOF";
         let end_p = Lexing.lexeme_end_p lexbuf in
-        Tokens.ERROR (Printf.sprintf "%S" (Buffer.contents buffer), (start_p, end_p)) }
-| _ { Buffer.add_string buffer (Lexing.lexeme lexbuf);
-      growing_string start_p buffer error_state lexbuf }
+        Tokens.ERROR (Printf.sprintf "%s" (Buffer.contents raw), (start_p, end_p)) }
+| _ { Buffer.add_string raw (Lexing.lexeme lexbuf);
+      Buffer.add_string buffer (Lexing.lexeme lexbuf);
+      growing_string raw start_p buffer error_state lexbuf }
 
 and comment level = parse
 | nl { Lexing.new_line lexbuf;
