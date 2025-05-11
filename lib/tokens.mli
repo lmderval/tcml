@@ -52,4 +52,5 @@ type token =
   | ERROR of string * location
   | EOF of location
 
-val string_from_location : location -> string
+val string_of_location : location -> string
+val string_of_token : token -> string
