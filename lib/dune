@@ -1,2 +1,3 @@
 (library
- (name tcml))
+ (name tcml)
+ (modules tasks))
