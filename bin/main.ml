@@ -12,4 +12,4 @@ let () =
   Tasks.register "b|bar" "Bar" bar "";
   Tasks.register "foobar" "Foobar" (fun () -> ()) "foo bar";
   Tasks.register "A|all" "Run all tasks" (fun () -> ()) "hello foobar world";
-  Tasks.run "all"
+  Tasks.run "A"

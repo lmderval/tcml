@@ -11,11 +11,15 @@ type task = {
 exception Task_not_found of string
 
 let _tasks = Hashtbl.create 16
+let _aliases = Hashtbl.create 16
 
 let get (name : string) =
   match Hashtbl.find_opt _tasks name with
   | Some task -> task
-  | None -> raise (Task_not_found name)
+  | None -> (
+      match Hashtbl.find_opt _aliases name with
+      | Some name -> Hashtbl.find _tasks name
+      | None -> raise (Task_not_found name))
 
 let _validate_name (name : string) =
   String.iter
@@ -52,7 +56,10 @@ let register (name : string) (description : string) (action : action)
     (depends_on : string) =
   let name, short = _parse_name name
   and depends_on = _parse_depends_on depends_on in
-  Hashtbl.add _tasks name { name; short; description; depends_on; action }
+  Hashtbl.add _tasks name { name; short; description; depends_on; action };
+  match short with
+  | Some alias -> Hashtbl.add _aliases (String.make 1 alias) name
+  | _ -> ()
 
 let rec run (name : string) =
   let task = get name in
