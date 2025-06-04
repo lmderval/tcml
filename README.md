@@ -15,7 +15,7 @@ nix develop .#tcml
 A `.helix` configuration directory is already given if you use helix as your
 code editor.
 
-## How To Build?
+## How To Build and Run?
 
 ### By using `nix build`
 You can compile TC-ML by running the following command.
@@ -23,6 +23,12 @@ You can compile TC-ML by running the following command.
 nix build .#tcml
 ```
 The `main.exe` executable can then be found inside `result/bin`.
+
+### By using `nix run`
+You can also run the program by using the command
+```sh
+nix run .#tcml
+```
 
 ### By using `nix develop`
 In development mode, it is recommended to run the following command to enter a

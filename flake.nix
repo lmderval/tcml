@@ -37,6 +37,7 @@
             '';
             installPhase = ''
               cp -r _build/default/ $out/
+              cp $out/bin/main.exe $out/bin/${self.packages.${system}.tcml.pname}
             '';
           };
           default = self.packages.${system}.tcml;
