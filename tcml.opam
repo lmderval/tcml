@@ -5,7 +5,7 @@ description:
   "Implementation of a Tiger Compiler based on the Andrew Appel book 'Modern Compiler Implementation in ML'"
 maintainer: ["Louis-Maël DERVAL"]
 authors: ["Louis-Maël DERVAL"]
-license: "LICENSE"
+license: "MIT"
 tags: ["tiger" "compiler" "ocaml"]
 homepage: "https://github.com/lmderval/tcml"
 doc: "https://github.com/lmderval/tcml"
