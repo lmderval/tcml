@@ -6,4 +6,4 @@
 
 (library
  (name tcml)
- (modules tokens lexer))
+ (modules tokens lexer context))
