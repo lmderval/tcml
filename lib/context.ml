@@ -21,6 +21,7 @@ let create lexbuf buf_size =
 
 let set_start_p ctx lexbuf = { ctx with start_p = Lexing.lexeme_start_p lexbuf }
 let set_end_p ctx lexbuf = { ctx with end_p = Lexing.lexeme_end_p lexbuf }
+let recreate_buffer ctx buf_size = { ctx with buf = Buffer.create buf_size }
 
 let add_char ctx chr =
   Buffer.add_char ctx.buf chr;
@@ -30,6 +31,9 @@ let add_string ctx str =
   Buffer.add_string ctx.buf str;
   ctx
 
+let recreate_string_buffer ctx buf_size =
+  { ctx with string_buf = Buffer.create buf_size }
+
 let string_add_char ctx chr =
   Buffer.add_char ctx.string_buf chr;
   ctx
@@ -37,6 +41,9 @@ let string_add_char ctx chr =
 let string_add_string ctx str =
   Buffer.add_string ctx.string_buf str;
   ctx
+
+let recreate_error_buffer ctx buf_size =
+  { ctx with error_buf = Buffer.create buf_size }
 
 let error_add_char ctx chr =
   Buffer.add_char ctx.error_buf chr;
