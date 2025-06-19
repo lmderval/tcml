@@ -9,44 +9,42 @@ let error_str msg ctx =
   Printf.eprintf "%s\n" msg;
   Context.error ctx
 
-exception Bad_escape
-
-let control ctrl =
+let control ctrl ctx =
   match ctrl with
-  | '@' -> '\x00'
-  | 'A' -> '\x01'
-  | 'B' -> '\x02'
-  | 'C' -> '\x03'
-  | 'D' -> '\x04'
-  | 'E' -> '\x05'
-  | 'F' -> '\x06'
-  | 'G' -> '\x07'
-  | 'H' -> '\x08'
-  | 'I' -> '\x09'
-  | 'J' -> '\x0a'
-  | 'K' -> '\x0b'
-  | 'L' -> '\x0c'
-  | 'M' -> '\x0d'
-  | 'N' -> '\x0e'
-  | 'O' -> '\x0f'
-  | 'P' -> '\x10'
-  | 'Q' -> '\x11'
-  | 'R' -> '\x12'
-  | 'S' -> '\x13'
-  | 'T' -> '\x14'
-  | 'U' -> '\x15'
-  | 'V' -> '\x16'
-  | 'W' -> '\x17'
-  | 'X' -> '\x18'
-  | 'Y' -> '\x19'
-  | 'Z' -> '\x1a'
-  | '[' -> '\x1b'
-  | '\\' -> '\x1c'
-  | ']' -> '\x1d'
-  | '^' -> '\x1e'
-  | '_' -> '\x1f'
-  | '?' -> '\x7f'
-  | _ -> raise Bad_escape
+  | '@' -> ('\x00', ctx)
+  | 'A' -> ('\x01', ctx)
+  | 'B' -> ('\x02', ctx)
+  | 'C' -> ('\x03', ctx)
+  | 'D' -> ('\x04', ctx)
+  | 'E' -> ('\x05', ctx)
+  | 'F' -> ('\x06', ctx)
+  | 'G' -> ('\x07', ctx)
+  | 'H' -> ('\x08', ctx)
+  | 'I' -> ('\x09', ctx)
+  | 'J' -> ('\x0a', ctx)
+  | 'K' -> ('\x0b', ctx)
+  | 'L' -> ('\x0c', ctx)
+  | 'M' -> ('\x0d', ctx)
+  | 'N' -> ('\x0e', ctx)
+  | 'O' -> ('\x0f', ctx)
+  | 'P' -> ('\x10', ctx)
+  | 'Q' -> ('\x11', ctx)
+  | 'R' -> ('\x12', ctx)
+  | 'S' -> ('\x13', ctx)
+  | 'T' -> ('\x14', ctx)
+  | 'U' -> ('\x15', ctx)
+  | 'V' -> ('\x16', ctx)
+  | 'W' -> ('\x17', ctx)
+  | 'X' -> ('\x18', ctx)
+  | 'Y' -> ('\x19', ctx)
+  | 'Z' -> ('\x1a', ctx)
+  | '[' -> ('\x1b', ctx)
+  | '\\' -> ('\x1c', ctx)
+  | ']' -> ('\x1d', ctx)
+  | '^' -> ('\x1e', ctx)
+  | '_' -> ('\x1f', ctx)
+  | '?' -> ('\x7f', ctx)
+  | _ -> ('\x00', Context.error ctx)
 }
 
 let id = ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']*
@@ -129,23 +127,20 @@ rule token ctx = parse
 (* | _ { Buffer.add_string buffer (Lexing.lexeme lexbuf); *)
       (* format buffer true lexbuf } *)
 
-(* and escape buffer = parse *)
-(* | 'n' { Buffer.add_char buffer 'n'; *)
-        (* "\x0a" } *)
-(* | 't' { Buffer.add_char buffer 't'; *)
-        (* "\x09" } *)
-(* | '^' _ { Buffer.add_string buffer (Lexing.lexeme lexbuf); *)
-          (* Printf.sprintf "%c" (control (Lexing.lexeme_char lexbuf 1)) } *)
-(* | byte { let raw_code = (Lexing.lexeme lexbuf) in *)
-         (* let code = int_of_string raw_code in *)
-         (* Buffer.add_string buffer raw_code; *)
-         (* if code <= 255 *)
-           (* then Printf.sprintf "%c" (Char.chr code) *)
-           (* else raise Bad_escape } *)
-(* | '"' { Buffer.add_char buffer '"'; *)
-        (* "\x22" } *)
-(* | '\\' { Buffer.add_char buffer '\\'; *)
-         (* "\x5c" } *)
+and escape ctx = parse
+| 'n' { ("\x0a", Context.escape_add_char ctx 'n') }
+| 't' { ("\x09", Context.escape_add_char ctx 't') }
+| '^' _ { let lxm = Lexing.lexeme lexbuf in
+          let ctrl, ctx = control (Lexing.lexeme_char lexbuf 1) (Context.escape_add_string ctx lxm) in
+          (Printf.sprintf "%c" ctrl, ctx) }
+| byte { let raw_code = (Lexing.lexeme lexbuf) in
+         let code = int_of_string raw_code in
+         let ctx = Context.escape_add_string ctx raw_code in
+         if code <= 255
+           then (Printf.sprintf "%c" (Char.chr code), ctx)
+           else ("\x00", Context.error ctx) }
+| '"' { ("\x22", Context.escape_add_char ctx '"') }
+| '\\' { ("\x5c", Context.escape_add_char ctx '\\') }
 (* | nl { Lexing.new_line lexbuf; *)
        (* Buffer.add_string buffer (Lexing.lexeme lexbuf); *)
        (* if format buffer false lexbuf *)
@@ -155,9 +150,10 @@ rule token ctx = parse
          (* if format buffer false lexbuf *)
            (* then raise Bad_escape; *)
          (* "" } *)
-(* | eof { raise Bad_escape } *)
-(* | _ { Buffer.add_string buffer (Lexing.lexeme lexbuf); *)
-      (* raise Bad_escape } *)
+| eof { ("\x00", Context.error ctx) }
+| _ { let lxm = Lexing.lexeme lexbuf in
+      let ctx = Context.escape_add_string ctx lxm in
+      ("\x00", Context.error ctx) }
 
 and growing_string raw ctx = parse
 | '"' { let ctx = Context.set_end_p ctx lexbuf in
@@ -170,18 +166,16 @@ and growing_string raw ctx = parse
        Lexing.new_line lexbuf;
        Buffer.add_string raw lxm;
        growing_string raw ctx lexbuf }
-(* | '\\' { let escape_buffer = Buffer.create 16 in *)
-         (* Buffer.add_char escape_buffer '\\'; *)
-         (* try *)
-           (* Buffer.add_string buffer (escape escape_buffer lexbuf); *)
-           (* Buffer.add_string raw (Buffer.contents escape_buffer); *)
-           (* growing_string raw start_p buffer error_state lexbuf *)
-         (* with Bad_escape -> *)
-           (* let e = Buffer.contents escape_buffer in *)
-           (* error_str (Printf.sprintf "Invalid escape: '%s'" e); *)
-           (* Buffer.add_string buffer e; *)
-           (* Buffer.add_string raw e; *)
-           (* growing_string raw start_p buffer true lexbuf } *)
+| '\\' { let esc, ctx = escape (Context.escape_add_char (Context.recreate_escape_buffer ctx 16) '\\') lexbuf in
+         match ctx.error_state with
+         | false -> let ctx = Context.string_add_string ctx esc in
+                    let esc = Buffer.contents ctx.escape_buf in
+                    Buffer.add_string raw esc;
+                    growing_string raw ctx lexbuf
+         | true -> let esc = Buffer.contents ctx.escape_buf in
+                   let ctx = Context.string_add_string (error_str (Printf.sprintf "Invalid escape: '%s'" esc) ctx) esc in
+                   Buffer.add_string raw esc;
+                   growing_string raw ctx lexbuf }
 | eof { let ctx = Context.set_end_p (error_str "Unexpected EOF" ctx) lexbuf in
         (Tokens.ERROR (Printf.sprintf "%s" (Buffer.contents raw), (ctx.start_p, ctx.end_p)), ctx) }
 | _ { let lxm = Lexing.lexeme lexbuf in
