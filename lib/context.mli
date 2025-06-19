@@ -2,6 +2,7 @@ type context = {
   start_p : Lexing.position;
   end_p : Lexing.position;
   buf : Buffer.t;
+  string_buf : Buffer.t;
   error_buf : Buffer.t;
   error_state : bool;
 }
@@ -13,6 +14,8 @@ val set_start_p : context -> Lexing.lexbuf -> context
 val set_end_p : context -> Lexing.lexbuf -> context
 val add_char : context -> char -> context
 val add_string : context -> string -> context
+val string_add_char : context -> char -> context
+val string_add_string : context -> string -> context
 val error_add_char : context -> char -> context
 val error_add_string : context -> string -> context
 val error : context -> context
