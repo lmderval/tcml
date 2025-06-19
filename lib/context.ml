@@ -3,6 +3,7 @@ type context = {
   end_p : Lexing.position;
   buf : Buffer.t;
   string_buf : Buffer.t;
+  escape_buf : Buffer.t;
   error_buf : Buffer.t;
   error_state : bool;
 }
@@ -15,6 +16,7 @@ let create lexbuf buf_size =
     end_p = Lexing.lexeme_end_p lexbuf;
     buf = Buffer.create buf_size;
     string_buf = Buffer.create buf_size;
+    escape_buf = Buffer.create buf_size;
     error_buf = Buffer.create buf_size;
     error_state = false;
   }
@@ -40,6 +42,17 @@ let string_add_char ctx chr =
 
 let string_add_string ctx str =
   Buffer.add_string ctx.string_buf str;
+  ctx
+
+let recreate_escape_buffer ctx buf_size =
+  { ctx with escape_buf = Buffer.create buf_size }
+
+let escape_add_char ctx chr =
+  Buffer.add_char ctx.escape_buf chr;
+  ctx
+
+let escape_add_string ctx str =
+  Buffer.add_string ctx.escape_buf str;
   ctx
 
 let recreate_error_buffer ctx buf_size =

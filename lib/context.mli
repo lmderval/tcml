@@ -3,6 +3,7 @@ type context = {
   end_p : Lexing.position;
   buf : Buffer.t;
   string_buf : Buffer.t;
+  escape_buf : Buffer.t;
   error_buf : Buffer.t;
   error_state : bool;
 }
@@ -18,6 +19,9 @@ val add_string : context -> string -> context
 val recreate_string_buffer : context -> int -> context
 val string_add_char : context -> char -> context
 val string_add_string : context -> string -> context
+val recreate_escape_buffer : context -> int -> context
+val escape_add_char : context -> char -> context
+val escape_add_string : context -> string -> context
 val recreate_error_buffer : context -> int -> context
 val error_add_char : context -> char -> context
 val error_add_string : context -> string -> context
