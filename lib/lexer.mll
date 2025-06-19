@@ -5,8 +5,9 @@ let error ctx lexbuf =
   Printf.eprintf "Invalid token: '%s'\n" (Lexing.lexeme lexbuf);
   (Tokens.ERROR (Lexing.lexeme lexbuf, location lexbuf), Context.error ctx)
 
-let error_str ctx msg =
-  (Printf.eprintf "%s\n" msg, Context.error ctx)
+let error_str msg ctx =
+  Printf.eprintf "%s\n" msg;
+  Context.error ctx
 
 exception Bad_escape
 
@@ -101,9 +102,10 @@ rule token ctx = parse
 (* Identifiers and Literals *)
 | id { (Tokens.ID (Lexing.lexeme lexbuf, location lexbuf), ctx) }
 | digit+ { (Tokens.INT (int_of_string (Lexing.lexeme lexbuf), location lexbuf), ctx) }
-(* | '"' { let raw = Buffer.create 16 and buffer = Buffer.create 16 in *)
-        (* Buffer.add_char raw '"'; *)
-        (* growing_string raw (Lexing.lexeme_start_p lexbuf) buffer false lexbuf } *)
+| '"' { let raw = Buffer.create 16 in
+        let ctx = Context.set_start_p (Context.recreate_string_buffer ctx 16) lexbuf in
+        Buffer.add_char raw '"';
+        growing_string raw ctx lexbuf }
 (* Blanks *)
 | ws+ { token ctx lexbuf }
 | nl { Lexing.new_line lexbuf;
@@ -157,17 +159,17 @@ rule token ctx = parse
 (* | _ { Buffer.add_string buffer (Lexing.lexeme lexbuf); *)
       (* raise Bad_escape } *)
 
-(* and growing_string raw start_p buffer error_state = parse *)
-(* | '"' { Buffer.add_char raw '"'; *)
-        (* let end_p = Lexing.lexeme_end_p lexbuf in *)
-        (* match error_state with *)
-        (* | false -> Tokens.STRING (Buffer.contents buffer, (start_p, end_p)) *)
-        (* | true -> Tokens.ERROR (Printf.sprintf "%S" (Buffer.contents buffer), (start_p, end_p)) } *)
-(* | nl { Lexing.new_line lexbuf; *)
-       (* let lxm = (Lexing.lexeme lexbuf) in *)
-       (* Buffer.add_string raw lxm; *)
-       (* Buffer.add_string buffer lxm; *)
-       (* growing_string raw start_p buffer error_state lexbuf } *)
+and growing_string raw ctx = parse
+| '"' { let ctx = Context.set_end_p ctx lexbuf in
+        Buffer.add_char raw '"';
+        match ctx.error_state with
+        | false -> (Tokens.STRING (Buffer.contents ctx.string_buf, (ctx.start_p, ctx.end_p)), ctx)
+        | true -> (Tokens.ERROR (Printf.sprintf "%S" (Buffer.contents ctx.string_buf), (ctx.start_p, ctx.end_p)), ctx) }
+| nl { let lxm = Lexing.lexeme lexbuf in
+       let ctx = Context.string_add_string ctx lxm in
+       Lexing.new_line lexbuf;
+       Buffer.add_string raw lxm;
+       growing_string raw ctx lexbuf }
 (* | '\\' { let escape_buffer = Buffer.create 16 in *)
          (* Buffer.add_char escape_buffer '\\'; *)
          (* try *)
@@ -180,12 +182,12 @@ rule token ctx = parse
            (* Buffer.add_string buffer e; *)
            (* Buffer.add_string raw e; *)
            (* growing_string raw start_p buffer true lexbuf } *)
-(* | eof { error_str "Unexpected EOF"; *)
-        (* let end_p = Lexing.lexeme_end_p lexbuf in *)
-        (* Tokens.ERROR (Printf.sprintf "%s" (Buffer.contents raw), (start_p, end_p)) } *)
-(* | _ { Buffer.add_string raw (Lexing.lexeme lexbuf); *)
-      (* Buffer.add_string buffer (Lexing.lexeme lexbuf); *)
-      (* growing_string raw start_p buffer error_state lexbuf } *)
+| eof { let ctx = Context.set_end_p (error_str "Unexpected EOF" ctx) lexbuf in
+        (Tokens.ERROR (Printf.sprintf "%s" (Buffer.contents raw), (ctx.start_p, ctx.end_p)), ctx) }
+| _ { let lxm = Lexing.lexeme lexbuf in
+      let ctx = Context.string_add_string ctx lxm in
+      Buffer.add_string raw (Lexing.lexeme lexbuf);
+      growing_string raw ctx lexbuf }
 
 (* and comment level start_p buffer = parse *)
 (* | nl { Lexing.new_line lexbuf; *)
