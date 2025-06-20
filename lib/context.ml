@@ -27,6 +27,15 @@ let create lexbuf buf_size =
 
 let set_start_p ctx lexbuf = { ctx with start_p = Lexing.lexeme_start_p lexbuf }
 let set_end_p ctx lexbuf = { ctx with end_p = Lexing.lexeme_end_p lexbuf }
+
+let set_p ctx lexbuf =
+  {
+    ctx with
+    start_p = Lexing.lexeme_start_p lexbuf;
+    end_p = Lexing.lexeme_end_p lexbuf;
+  }
+
+let location ctx = (ctx.start_p, ctx.end_p)
 let recreate_buffer ctx buf_size = { ctx with buf = Buffer.create buf_size }
 
 let add_char ctx chr =

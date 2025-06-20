@@ -1,9 +1,9 @@
 {
-let location lexbuf = (Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf)
-
 let error ctx lexbuf =
-  Printf.eprintf "Invalid token: '%s'\n" (Lexing.lexeme lexbuf);
-  (Tokens.ERROR (Lexing.lexeme lexbuf, location lexbuf), Context.error ctx)
+  let lxm = Lexing.lexeme lexbuf in
+  let ctx = Context.error (Context.set_p ctx lexbuf) in
+  Printf.eprintf "Invalid token: '%s'\n" lxm;
+  (Tokens.ERROR (lxm, Context.location ctx), ctx)
 
 let error_str msg ctx =
   Printf.eprintf "%s\n" msg;
@@ -56,62 +56,107 @@ let fmt = [' ' '\t' '\x0c']
 
 rule token ctx = parse
 (* Reserved Keywords *)
-| "array" { (Tokens.ARRAY (location lexbuf), ctx) }
-| "break" { (Tokens.BREAK (location lexbuf), ctx) }
-| "do" { (Tokens.DO (location lexbuf), ctx) }
-| "else" { (Tokens.ELSE (location lexbuf), ctx) }
-| "end" { (Tokens.END (location lexbuf), ctx) }
-| "for" { (Tokens.FOR (location lexbuf), ctx) }
-| "function" { (Tokens.FUNCTION (location lexbuf), ctx) }
-| "if" { (Tokens.IF (location lexbuf), ctx) }
-| "in" { (Tokens.IN (location lexbuf), ctx) }
-| "let" { (Tokens.LET (location lexbuf), ctx) }
-| "nil" { (Tokens.NIL (location lexbuf), ctx) }
-| "of" { (Tokens.OF (location lexbuf), ctx) }
-| "then" { (Tokens.THEN (location lexbuf), ctx) }
-| "to" { (Tokens.TO (location lexbuf), ctx) }
-| "type" { (Tokens.TYPE (location lexbuf), ctx) }
-| "var" { (Tokens.VAR (location lexbuf), ctx) }
-| "while" { (Tokens.WHILE (location lexbuf), ctx) }
+| "array" { let ctx = Context.set_p ctx lexbuf in
+            (Tokens.ARRAY (Context.location ctx), ctx) }
+| "break" { let ctx = Context.set_p ctx lexbuf in
+            (Tokens.BREAK (Context.location ctx), ctx) }
+| "do" { let ctx = Context.set_p ctx lexbuf in
+         (Tokens.DO (Context.location ctx), ctx) }
+| "else" { let ctx = Context.set_p ctx lexbuf in
+           (Tokens.ELSE (Context.location ctx), ctx) }
+| "end" { let ctx = Context.set_p ctx lexbuf in
+          (Tokens.END (Context.location ctx), ctx) }
+| "for" { let ctx = Context.set_p ctx lexbuf in
+          (Tokens.FOR (Context.location ctx), ctx) }
+| "function" { let ctx = Context.set_p ctx lexbuf in
+               (Tokens.FUNCTION (Context.location ctx), ctx) }
+| "if" { let ctx = Context.set_p ctx lexbuf in
+         (Tokens.IF (Context.location ctx), ctx) }
+| "in" { let ctx = Context.set_p ctx lexbuf in
+         (Tokens.IN (Context.location ctx), ctx) }
+| "let" { let ctx = Context.set_p ctx lexbuf in
+          (Tokens.LET (Context.location ctx), ctx) }
+| "nil" { let ctx = Context.set_p ctx lexbuf in
+          (Tokens.NIL (Context.location ctx), ctx) }
+| "of" { let ctx = Context.set_p ctx lexbuf in
+         (Tokens.OF (Context.location ctx), ctx) }
+| "then" { let ctx = Context.set_p ctx lexbuf in
+           (Tokens.THEN (Context.location ctx), ctx) }
+| "to" { let ctx = Context.set_p ctx lexbuf in
+         (Tokens.TO (Context.location ctx), ctx) }
+| "type" { let ctx = Context.set_p ctx lexbuf in
+           (Tokens.TYPE (Context.location ctx), ctx) }
+| "var" { let ctx = Context.set_p ctx lexbuf in
+          (Tokens.VAR (Context.location ctx), ctx) }
+| "while" { let ctx = Context.set_p ctx lexbuf in
+            (Tokens.WHILE (Context.location ctx), ctx) }
 (* Punctuation Symbols *)
-| "&" { (Tokens.AND (location lexbuf), ctx) }
-| ":=" { (Tokens.ASSIGN (location lexbuf), ctx) }
-| ":" { (Tokens.COLUMN (location lexbuf), ctx) }
-| "," { (Tokens.COMMA (location lexbuf), ctx) }
-| "/" { (Tokens.DIV (location lexbuf), ctx) }
-| "." { (Tokens.DOT (location lexbuf), ctx) }
-| "=" { (Tokens.EQ (location lexbuf), ctx) }
-| ">=" { (Tokens.GE (location lexbuf), ctx) }
-| ">" { (Tokens.GT (location lexbuf), ctx) }
-| "[" { (Tokens.LBRACK (location lexbuf), ctx) }
-| "{" { (Tokens.LCURLY (location lexbuf), ctx) }
-| "(" { (Tokens.LPAREN (location lexbuf), ctx) }
-| "<=" { (Tokens.LE (location lexbuf), ctx) }
-| "<" { (Tokens.LT (location lexbuf), ctx) }
-| "-" { (Tokens.MINUS (location lexbuf), ctx) }
-| "*" { (Tokens.MUL (location lexbuf), ctx) }
-| "<>" { (Tokens.NE (location lexbuf), ctx) }
-| "|" { (Tokens.OR (location lexbuf), ctx) }
-| "+" { (Tokens.PLUS (location lexbuf), ctx) }
-| "]" { (Tokens.RBRACK (location lexbuf), ctx) }
-| "}" { (Tokens.RCURLY (location lexbuf), ctx) }
-| ")" { (Tokens.RPAREN (location lexbuf), ctx) }
-| ";" { (Tokens.SEMI (location lexbuf), ctx) }
+| "&" { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.AND (Context.location ctx), ctx) }
+| ":=" { let ctx = Context.set_p ctx lexbuf in
+         (Tokens.ASSIGN (Context.location ctx), ctx) }
+| ":" { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.COLUMN (Context.location ctx), ctx) }
+| "," { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.COMMA (Context.location ctx), ctx) }
+| "/" { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.DIV (Context.location ctx), ctx) }
+| "." { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.DOT (Context.location ctx), ctx) }
+| "=" { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.EQ (Context.location ctx), ctx) }
+| ">=" { let ctx = Context.set_p ctx lexbuf in
+         (Tokens.GE (Context.location ctx), ctx) }
+| ">" { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.GT (Context.location ctx), ctx) }
+| "[" { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.LBRACK (Context.location ctx), ctx) }
+| "{" { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.LCURLY (Context.location ctx), ctx) }
+| "(" { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.LPAREN (Context.location ctx), ctx) }
+| "<=" { let ctx = Context.set_p ctx lexbuf in
+         (Tokens.LE (Context.location ctx), ctx) }
+| "<" { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.LT (Context.location ctx), ctx) }
+| "-" { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.MINUS (Context.location ctx), ctx) }
+| "*" { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.MUL (Context.location ctx), ctx) }
+| "<>" { let ctx = Context.set_p ctx lexbuf in
+         (Tokens.NE (Context.location ctx), ctx) }
+| "|" { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.OR (Context.location ctx), ctx) }
+| "+" { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.PLUS (Context.location ctx), ctx) }
+| "]" { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.RBRACK (Context.location ctx), ctx) }
+| "}" { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.RCURLY (Context.location ctx), ctx) }
+| ")" { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.RPAREN (Context.location ctx), ctx) }
+| ";" { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.SEMI (Context.location ctx), ctx) }
 (* Identifiers and Literals *)
-| id { (Tokens.ID (Lexing.lexeme lexbuf, location lexbuf), ctx) }
-| digit+ { (Tokens.INT (int_of_string (Lexing.lexeme lexbuf), location lexbuf), ctx) }
+| id { let lxm = Lexing.lexeme lexbuf in
+       let ctx = Context.set_p ctx lexbuf in
+       (Tokens.ID (lxm, Context.location ctx), ctx) }
+| digit+ { let lxm = Lexing.lexeme lexbuf in
+           let ctx = Context.set_p ctx lexbuf in
+           (Tokens.INT (int_of_string lxm, Context.location ctx), ctx) }
 | '"' { let raw = Buffer.create 16 in
-        let ctx = Context.set_start_p (Context.recreate_string_buffer ctx 16) lexbuf in
+        let ctx = Context.set_p (Context.recreate_string_buffer ctx 16) lexbuf in
         Buffer.add_char raw '"';
         growing_string raw ctx lexbuf }
 (* Blanks *)
 | ws+ { token ctx lexbuf }
 | nl { Lexing.new_line lexbuf;
        token ctx lexbuf }
-| "/*" { let ctx = Context.set_start_p (Context.comment_add_string (Context.recreate_comment_buffer ctx 16) "/*") lexbuf in
+| "/*" { let ctx = Context.set_p (Context.comment_add_string (Context.recreate_comment_buffer ctx 16) "/*") lexbuf in
          comment (Context.enter_comment ctx) lexbuf }
 (* Others *)
-| eof { (Tokens.EOF (location lexbuf), ctx) }
+| eof { let ctx = Context.set_p ctx lexbuf in
+        (Tokens.EOF (Context.location ctx), ctx) }
 | _ { error ctx lexbuf }
 
 and format ctx = parse
@@ -134,9 +179,9 @@ and escape ctx = parse
 | '^' _ { let lxm = Lexing.lexeme lexbuf in
           let ctrl, ctx = control (Lexing.lexeme_char lexbuf 1) (Context.escape_add_string ctx lxm) in
           (Printf.sprintf "%c" ctrl, ctx) }
-| byte { let raw_code = (Lexing.lexeme lexbuf) in
-         let code = int_of_string raw_code in
-         let ctx = Context.escape_add_string ctx raw_code in
+| byte { let lxm = (Lexing.lexeme lexbuf) in
+         let code = int_of_string lxm in
+         let ctx = Context.escape_add_string ctx lxm in
          if code <= 255
            then (Printf.sprintf "%c" (Char.chr code), ctx)
            else ("\x00", Context.error ctx) }
@@ -162,8 +207,8 @@ and growing_string raw ctx = parse
 | '"' { let ctx = Context.set_end_p ctx lexbuf in
         Buffer.add_char raw '"';
         match ctx.error_state with
-        | false -> (Tokens.STRING (Buffer.contents ctx.string_buf, (ctx.start_p, ctx.end_p)), ctx)
-        | true -> (Tokens.ERROR (Printf.sprintf "%S" (Buffer.contents ctx.string_buf), (ctx.start_p, ctx.end_p)), ctx) }
+        | false -> (Tokens.STRING (Buffer.contents ctx.string_buf, Context.location ctx), ctx)
+        | true -> (Tokens.ERROR (Printf.sprintf "%S" (Buffer.contents ctx.string_buf), Context.location ctx), ctx) }
 | nl { let lxm = Lexing.lexeme lexbuf in
        let ctx = Context.string_add_string ctx lxm in
        Lexing.new_line lexbuf;
@@ -180,10 +225,10 @@ and growing_string raw ctx = parse
                    Buffer.add_string raw esc;
                    growing_string raw ctx lexbuf }
 | eof { let ctx = Context.set_end_p (error_str "Unexpected EOF" ctx) lexbuf in
-        (Tokens.ERROR (Printf.sprintf "%s" (Buffer.contents raw), (ctx.start_p, ctx.end_p)), ctx) }
+        (Tokens.ERROR (Printf.sprintf "%s" (Buffer.contents raw), Context.location ctx), ctx) }
 | _ { let lxm = Lexing.lexeme lexbuf in
       let ctx = Context.string_add_string ctx lxm in
-      Buffer.add_string raw (Lexing.lexeme lexbuf);
+      Buffer.add_string raw lxm;
       growing_string raw ctx lexbuf }
 
 and comment ctx = parse
@@ -197,7 +242,7 @@ and comment ctx = parse
            then token ctx lexbuf
            else comment ctx lexbuf }
 | eof { let ctx = error_str "Unexpected EOF" (Context.set_end_p ctx lexbuf) in
-        (Tokens.ERROR (Printf.sprintf "%s" (Buffer.contents ctx.comment_buf), (ctx.start_p, ctx.end_p)), ctx) }
+        (Tokens.ERROR (Printf.sprintf "%s" (Buffer.contents ctx.comment_buf), Context.location ctx), ctx) }
 | _ { let lxm = Lexing.lexeme lexbuf in
       let ctx = Context.comment_add_string ctx lxm in
       comment ctx lexbuf }
