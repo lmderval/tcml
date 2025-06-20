@@ -5,7 +5,9 @@ type context = {
   string_buf : Buffer.t;
   escape_buf : Buffer.t;
   error_buf : Buffer.t;
+  comment_buf : Buffer.t;
   error_state : bool;
+  comment_level : int;
 }
 
 type t = context
@@ -25,4 +27,9 @@ val escape_add_string : context -> string -> context
 val recreate_error_buffer : context -> int -> context
 val error_add_char : context -> char -> context
 val error_add_string : context -> string -> context
+val recreate_comment_buffer : context -> int -> context
+val comment_add_char : context -> char -> context
+val comment_add_string : context -> string -> context
 val error : context -> context
+val enter_comment : context -> context
+val leave_comment : context -> context
