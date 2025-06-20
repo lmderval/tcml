@@ -115,17 +115,19 @@ rule token ctx = parse
 | eof { (Tokens.EOF (location lexbuf), ctx) }
 | _ { error ctx lexbuf }
 
-(* and format buffer error_state = parse *)
-(* | nl { Lexing.new_line lexbuf; *)
-       (* Buffer.add_string buffer (Lexing.lexeme lexbuf); *)
-       (* format buffer error_state lexbuf } *)
-(* | fmt+ { Buffer.add_string buffer (Lexing.lexeme lexbuf); *)
-         (* format buffer error_state lexbuf } *)
-(* | '\\' { Buffer.add_char buffer '\\'; *)
-         (* error_state } *)
-(* | eof { true } *)
-(* | _ { Buffer.add_string buffer (Lexing.lexeme lexbuf); *)
-      (* format buffer true lexbuf } *)
+and format ctx = parse
+| nl { let lxm = Lexing.lexeme lexbuf in
+       let ctx = Context.escape_add_string ctx lxm in
+       Lexing.new_line lexbuf;
+       format ctx lexbuf }
+| fmt+ { let lxm = Lexing.lexeme lexbuf in
+         let ctx = Context.escape_add_string ctx lxm in
+         format ctx lexbuf }
+| '\\' { Context.escape_add_char ctx '\\' }
+| eof { Context.error ctx }
+| _ { let lxm = Lexing.lexeme lexbuf in
+      let ctx = Context.escape_add_string ctx lxm in
+      format (Context.error ctx) lexbuf }
 
 and escape ctx = parse
 | 'n' { ("\x0a", Context.escape_add_char ctx 'n') }
@@ -141,15 +143,17 @@ and escape ctx = parse
            else ("\x00", Context.error ctx) }
 | '"' { ("\x22", Context.escape_add_char ctx '"') }
 | '\\' { ("\x5c", Context.escape_add_char ctx '\\') }
-(* | nl { Lexing.new_line lexbuf; *)
-       (* Buffer.add_string buffer (Lexing.lexeme lexbuf); *)
-       (* if format buffer false lexbuf *)
-         (* then raise Bad_escape; *)
-       (* "" } *)
-(* | fmt+ { Buffer.add_string buffer (Lexing.lexeme lexbuf); *)
-         (* if format buffer false lexbuf *)
-           (* then raise Bad_escape; *)
-         (* "" } *)
+| nl { let lxm = Lexing.lexeme lexbuf in
+       let ctx = format (Context.escape_add_string ctx lxm) lexbuf in
+       Lexing.new_line lexbuf;
+       match ctx.error_state with
+       | false -> ("", ctx)
+       | true -> ("\x00", ctx) }
+| fmt+ { let lxm = Lexing.lexeme lexbuf in
+         let ctx = format (Context.escape_add_string ctx lxm) lexbuf in
+         match ctx.error_state with
+         | false -> ("", ctx)
+         | true -> ("\x00", ctx) }
 | eof { ("\x00", Context.error ctx) }
 | _ { let lxm = Lexing.lexeme lexbuf in
       let ctx = Context.escape_add_string ctx lxm in
