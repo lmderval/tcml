@@ -108,9 +108,8 @@ rule token ctx = parse
 | ws+ { token ctx lexbuf }
 | nl { Lexing.new_line lexbuf;
        token ctx lexbuf }
-(* | "/*" { let buffer = Buffer.create 16 in *)
-         (* Buffer.add_string buffer "/*"; *)
-         (* comment 0 (Lexing.lexeme_start_p lexbuf) buffer lexbuf } *)
+| "/*" { let ctx = Context.set_start_p (Context.comment_add_string (Context.recreate_comment_buffer ctx 16) "/*") lexbuf in
+         comment (Context.enter_comment ctx) lexbuf }
 (* Others *)
 | eof { (Tokens.EOF (location lexbuf), ctx) }
 | _ { error ctx lexbuf }
@@ -187,20 +186,20 @@ and growing_string raw ctx = parse
       Buffer.add_string raw (Lexing.lexeme lexbuf);
       growing_string raw ctx lexbuf }
 
-(* and comment level start_p buffer = parse *)
-(* | nl { Lexing.new_line lexbuf; *)
-       (* Buffer.add_string buffer (Lexing.lexeme lexbuf); *)
-       (* comment level start_p buffer lexbuf } *)
-(* | "/*" { Buffer.add_string buffer "/*"; *)
-         (* comment (level + 1) start_p buffer lexbuf } *)
-(* | "*/" { Buffer.add_string buffer "*/"; *)
-         (* if level == 0 *)
-           (* then token lexbuf *)
-           (* else comment (level - 1) start_p buffer lexbuf } *)
-(* | eof { error_str "Unexpected EOF"; *)
-        (* let end_p = Lexing.lexeme_end_p lexbuf in *)
-        (* Tokens.ERROR (Printf.sprintf "%s" (Buffer.contents buffer), (start_p, end_p)) } *)
-(* | _ { Buffer.add_string buffer (Lexing.lexeme lexbuf); *)
-      (* comment level start_p buffer lexbuf } *)
+and comment ctx = parse
+| nl { let lxm = Lexing.lexeme lexbuf in
+       let ctx = Context.comment_add_string ctx lxm in
+       Lexing.new_line lexbuf;
+       comment ctx lexbuf }
+| "/*" { comment (Context.enter_comment (Context.comment_add_string ctx "/*")) lexbuf }
+| "*/" { let ctx = Context.leave_comment (Context.comment_add_string ctx "*/") in
+         if ctx.comment_level == 0
+           then token ctx lexbuf
+           else comment ctx lexbuf }
+| eof { let ctx = error_str "Unexpected EOF" (Context.set_end_p ctx lexbuf) in
+        (Tokens.ERROR (Printf.sprintf "%s" (Buffer.contents ctx.comment_buf), (ctx.start_p, ctx.end_p)), ctx) }
+| _ { let lxm = Lexing.lexeme lexbuf in
+      let ctx = Context.comment_add_string ctx lxm in
+      comment ctx lexbuf }
 
 {}
