@@ -1,2 +1,9 @@
+(rule
+ (target lexer.ml)
+ (deps lexer.mll)
+ (action
+  (run ocamllex -o %{target} %{deps})))
+
 (library
- (name tcml))
+ (name tcml)
+ (modules tokens lexer context))
