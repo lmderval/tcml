@@ -5,5 +5,5 @@
   (run ocamllex -o %{target} %{deps})))
 
 (library
- (name tcml)
+ (name parse)
  (modules tokens lexer context))
